@@ -17,6 +17,8 @@ DEPENDENCIES = ["spi"]
 
 CONF_LATCH_PIN = "latch_pin"
 CONF_INVERT_ENABLE = "invert_enable"
+CONF_GRAY_LEVELS = "gray_levels"
+CONF_REFRESH_INTERVAL = "refresh_interval"
 
 spi_latched_matrix_ns = cg.esphome_ns.namespace("spi_latched_matrix")
 SPILatchedMatrix = spi_latched_matrix_ns.class_(
@@ -34,6 +36,10 @@ CONFIG_SCHEMA = cv.All(
             cv.Optional(CONF_ENABLE_PIN): pins.gpio_output_pin_schema,
             cv.Optional(CONF_INVERT_ENABLE, default=False): cv.boolean,
             cv.Optional(CONF_THRESHOLD, default=1): cv.int_range(min=1, max=255),
+            cv.Optional(CONF_GRAY_LEVELS, default=1): cv.int_range(min=1, max=255),
+            cv.Optional(
+                CONF_REFRESH_INTERVAL, default="200us"
+            ): cv.positive_time_period_microseconds,
             cv.Optional(CONF_PIXEL_MAPPER): cv.returning_lambda,
         }
     ).extend(spi.spi_device_schema(False, "10MHz")),
@@ -59,6 +65,10 @@ async def to_code(config):
 
     cg.add(var.set_invert_enable(config[CONF_INVERT_ENABLE]))
     cg.add(var.set_threshold(config[CONF_THRESHOLD]))
+    cg.add(var.set_gray_levels(config[CONF_GRAY_LEVELS]))
+    cg.add(
+        var.set_refresh_interval_us(config[CONF_REFRESH_INTERVAL].total_microseconds)
+    )
 
     if pixel_mapper := config.get(CONF_PIXEL_MAPPER):
         pixel_mapper_template = await cg.process_lambda(

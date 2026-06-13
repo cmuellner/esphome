@@ -10,6 +10,7 @@
 #include "esphome/core/color.h"
 #include "esphome/core/component.h"
 #include "esphome/core/gpio.h"
+#include "esphome/core/helpers.h"
 
 namespace esphome::spi_latched_matrix {
 
@@ -23,9 +24,12 @@ class SPILatchedMatrix : public display::DisplayBuffer,
   void set_enable_pin(GPIOPin *enable_pin) { this->enable_pin_ = enable_pin; }
   void set_invert_enable(bool invert_enable) { this->invert_enable_ = invert_enable; }
   void set_threshold(uint8_t threshold) { this->threshold_ = threshold; }
+  void set_gray_levels(uint8_t gray_levels) { this->gray_levels_ = gray_levels; }
+  void set_refresh_interval_us(uint32_t refresh_interval_us) { this->refresh_interval_us_ = refresh_interval_us; }
   void set_pixel_mapper(std::function<int(int, int)> &&pixel_mapper) { this->pixel_mapper_ = std::move(pixel_mapper); }
 
   void setup() override;
+  void loop() override;
   void update() override;
   void dump_config() override;
   float get_setup_priority() const override { return setup_priority::PROCESSOR; }
@@ -40,6 +44,7 @@ class SPILatchedMatrix : public display::DisplayBuffer,
 
   int pixel_index_(int x, int y) const;
   uint8_t color_to_grayscale_(Color color) const;
+  void render_(uint8_t pwm_threshold);
   void set_enable_(bool enable);
   void pulse_latch_();
 
@@ -49,6 +54,11 @@ class SPILatchedMatrix : public display::DisplayBuffer,
   GPIOPin *enable_pin_{nullptr};
   bool invert_enable_{false};
   uint8_t threshold_{1};
+  uint8_t gray_levels_{1};
+  uint32_t refresh_interval_us_{0};
+  uint32_t last_refresh_us_{0};
+  uint8_t pwm_counter_{0};
+  HighFrequencyLoopRequester high_freq_;
   std::function<int(int, int)> pixel_mapper_{};
   std::unique_ptr<uint8_t[]> transfer_buffer_;
   size_t transfer_buffer_size_{0};

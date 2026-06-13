@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cstring>
 
+#include "esphome/core/hal.h"
 #include "esphome/core/log.h"
 
 namespace esphome::spi_latched_matrix {
@@ -25,6 +26,8 @@ void SPILatchedMatrix::setup() {
   this->transfer_buffer_size_ = (pixel_count + 7) / 8;
   this->transfer_buffer_ = std::make_unique<uint8_t[]>(this->transfer_buffer_size_);
   this->display();
+  if (this->gray_levels_ > 1)
+    this->high_freq_.start();
 }
 
 void SPILatchedMatrix::dump_config() {
@@ -32,8 +35,11 @@ void SPILatchedMatrix::dump_config() {
                 "SPI Latched Matrix:\n"
                 "  Width: %d\n"
                 "  Height: %d\n"
-                "  Threshold: %u",
-                this->width_, this->height_, this->threshold_);
+                "  Threshold: %u\n"
+                "  Gray Levels: %u\n"
+                "  Refresh Interval: %u us",
+                this->width_, this->height_, this->threshold_, this->gray_levels_,
+                static_cast<unsigned>(this->refresh_interval_us_));
   LOG_PIN("  Latch Pin: ", this->latch_pin_);
   LOG_PIN("  Enable Pin: ", this->enable_pin_);
   ESP_LOGCONFIG(TAG, "  Inverted Enable: %s", YESNO(this->invert_enable_));
@@ -41,12 +47,30 @@ void SPILatchedMatrix::dump_config() {
   LOG_SPI_DEVICE(this);
 }
 
-void SPILatchedMatrix::update() {
-  this->do_update_();
-  this->display();
+void SPILatchedMatrix::loop() {
+  if (this->gray_levels_ <= 1)
+    return;
+
+  const uint32_t now = micros();
+  if (now - this->last_refresh_us_ < this->refresh_interval_us_)
+    return;
+  this->last_refresh_us_ = now;
+
+  this->render_(this->pwm_counter_);
+
+  const uint8_t step = std::max<uint8_t>(1, 256 / this->gray_levels_);
+  this->pwm_counter_ += step;
 }
 
-void SPILatchedMatrix::display() {
+void SPILatchedMatrix::update() {
+  this->do_update_();
+  if (this->gray_levels_ <= 1)
+    this->display();
+}
+
+void SPILatchedMatrix::display() { this->render_(this->threshold_ - 1); }
+
+void SPILatchedMatrix::render_(uint8_t pwm_threshold) {
   if (this->buffer_ == nullptr || this->transfer_buffer_ == nullptr || this->transfer_buffer_size_ == 0)
     return;
 
@@ -58,7 +82,8 @@ void SPILatchedMatrix::display() {
   for (int y = 0; y < this->height_; y++) {
     for (int x = 0; x < this->width_; x++) {
       const int logical_index = y * this->width_ + x;
-      if (this->buffer_[logical_index] < this->threshold_)
+      const uint8_t brightness = this->buffer_[logical_index];
+      if (brightness < this->threshold_ || brightness <= pwm_threshold)
         continue;
 
       const int physical_index = this->pixel_index_(x, y);
