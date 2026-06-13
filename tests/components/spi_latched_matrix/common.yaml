@@ -1,0 +1,14 @@
+display:
+  - platform: spi_latched_matrix
+    id: matrix_display
+    width: 16
+    height: 16
+    latch_pin: ${latch_pin}
+    enable_pin: ${enable_pin}
+    invert_enable: true
+    threshold: 1
+    pixel_mapper: |-
+      return y * 16 + x;
+    lambda: |-
+      it.line(0, 0, 15, 15);
+      it.rectangle(1, 1, 14, 14);
