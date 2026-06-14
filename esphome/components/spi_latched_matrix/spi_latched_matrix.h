@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstddef>
+#include <cstdint>
 #include <functional>
 #include <memory>
 #include <utility>
@@ -31,6 +32,7 @@ class SPILatchedMatrix : public display::DisplayBuffer,
   void setup() override;
   void loop() override;
   void update() override;
+  void fill(Color color) override;
   void dump_config() override;
   float get_setup_priority() const override { return setup_priority::PROCESSOR; }
 
@@ -43,8 +45,12 @@ class SPILatchedMatrix : public display::DisplayBuffer,
   void draw_absolute_pixel_internal(int x, int y, Color color) override;
 
   int pixel_index_(int x, int y) const;
+  void build_pixel_map_();
+  void build_pwm_frames_();
   uint8_t color_to_grayscale_(Color color) const;
   void render_(uint8_t pwm_threshold);
+  void write_next_pwm_frame_();
+  void write_frame_(const uint8_t *frame);
   void set_enable_(bool enable);
   void pulse_latch_();
 
@@ -57,10 +63,14 @@ class SPILatchedMatrix : public display::DisplayBuffer,
   uint8_t gray_levels_{1};
   uint32_t refresh_interval_us_{0};
   uint32_t last_refresh_us_{0};
-  uint8_t pwm_counter_{0};
+  uint8_t pwm_phase_{0};
   HighFrequencyLoopRequester high_freq_;
   std::function<int(int, int)> pixel_mapper_{};
+  std::unique_ptr<uint16_t[]> pixel_map_;
   std::unique_ptr<uint8_t[]> transfer_buffer_;
+  std::unique_ptr<uint8_t[]> pwm_buffers_[2];
+  uint8_t active_pwm_buffer_{0};
+  uint8_t build_pwm_buffer_{1};
   size_t transfer_buffer_size_{0};
 };
 
