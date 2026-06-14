@@ -7,6 +7,7 @@ display:
     enable_pin: ${enable_pin}
     invert_enable: true
     threshold: 1
+    max_brightness: 50%
     gray_levels: 4
     refresh_interval: 1ms
     pixel_mapper: |-

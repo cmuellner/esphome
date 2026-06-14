@@ -7,6 +7,7 @@ from esphome.const import (
     CONF_HEIGHT,
     CONF_ID,
     CONF_LAMBDA,
+    CONF_MAX_BRIGHTNESS,
     CONF_PAGES,
     CONF_PIXEL_MAPPER,
     CONF_THRESHOLD,
@@ -36,6 +37,7 @@ CONFIG_SCHEMA = cv.All(
             cv.Optional(CONF_ENABLE_PIN): pins.gpio_output_pin_schema,
             cv.Optional(CONF_INVERT_ENABLE, default=False): cv.boolean,
             cv.Optional(CONF_THRESHOLD, default=1): cv.int_range(min=1, max=255),
+            cv.Optional(CONF_MAX_BRIGHTNESS, default="100%"): cv.percentage,
             cv.Optional(CONF_GRAY_LEVELS, default=1): cv.int_range(min=1, max=255),
             cv.Optional(
                 CONF_REFRESH_INTERVAL, default="200us"
@@ -65,6 +67,7 @@ async def to_code(config):
 
     cg.add(var.set_invert_enable(config[CONF_INVERT_ENABLE]))
     cg.add(var.set_threshold(config[CONF_THRESHOLD]))
+    cg.add(var.set_max_brightness(round(config[CONF_MAX_BRIGHTNESS] * 255)))
     cg.add(var.set_gray_levels(config[CONF_GRAY_LEVELS]))
     cg.add(
         var.set_refresh_interval_us(config[CONF_REFRESH_INTERVAL].total_microseconds)

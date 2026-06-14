@@ -44,9 +44,11 @@ void SPILatchedMatrix::dump_config() {
                 "  Width: %d\n"
                 "  Height: %d\n"
                 "  Threshold: %u\n"
+                "  Max Brightness: %u%%\n"
                 "  Gray Levels: %u\n"
                 "  Refresh Interval: %u us",
-                this->width_, this->height_, this->threshold_, this->gray_levels_,
+                this->width_, this->height_, this->threshold_,
+                static_cast<unsigned>((this->max_brightness_ * 100U + 127U) / 255U), this->gray_levels_,
                 static_cast<unsigned>(this->refresh_interval_us_));
   LOG_PIN("  Latch Pin: ", this->latch_pin_);
   LOG_PIN("  Enable Pin: ", this->enable_pin_);
@@ -215,7 +217,8 @@ int SPILatchedMatrix::pixel_index_(int x, int y) const {
 }
 
 uint8_t SPILatchedMatrix::color_to_grayscale_(Color color) const {
-  return std::max({color.red, color.green, color.blue, color.white});
+  const uint8_t brightness = std::max({color.red, color.green, color.blue, color.white});
+  return static_cast<uint8_t>(brightness * this->max_brightness_ / 255U);
 }
 
 void SPILatchedMatrix::set_enable_(bool enable) {

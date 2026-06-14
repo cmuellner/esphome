@@ -25,6 +25,7 @@ class SPILatchedMatrix : public display::DisplayBuffer,
   void set_enable_pin(GPIOPin *enable_pin) { this->enable_pin_ = enable_pin; }
   void set_invert_enable(bool invert_enable) { this->invert_enable_ = invert_enable; }
   void set_threshold(uint8_t threshold) { this->threshold_ = threshold; }
+  void set_max_brightness(uint8_t max_brightness) { this->max_brightness_ = max_brightness; }
   void set_gray_levels(uint8_t gray_levels) { this->gray_levels_ = gray_levels; }
   void set_refresh_interval_us(uint32_t refresh_interval_us) { this->refresh_interval_us_ = refresh_interval_us; }
   void set_pixel_mapper(std::function<int(int, int)> &&pixel_mapper) { this->pixel_mapper_ = std::move(pixel_mapper); }
@@ -60,6 +61,7 @@ class SPILatchedMatrix : public display::DisplayBuffer,
   GPIOPin *enable_pin_{nullptr};
   bool invert_enable_{false};
   uint8_t threshold_{1};
+  uint8_t max_brightness_{255};
   uint8_t gray_levels_{1};
   uint32_t refresh_interval_us_{0};
   uint32_t last_refresh_us_{0};
